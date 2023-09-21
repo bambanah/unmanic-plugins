@@ -4,7 +4,7 @@
 """
     Written by:               Josh.5 <jsunnex@gmail.com>
     Date:                     18 April 2021, (1:41 AM)
- 
+
     Copyright:
         Copyright (C) 2021 Josh Sunnex
 
@@ -23,30 +23,82 @@ import logging
 import os
 import re
 
+from unmanic.libs.unplugins.settings import PluginSettings
+
 from extract_srt_subtitles_to_files.lib.ffmpeg import StreamMapper, Probe, Parser
 
 # Configure plugin logger
 logger = logging.getLogger("Unmanic.Plugin.extract_srt_subtitles_to_files")
 
 
+class Settings(PluginSettings):
+    settings = {
+        "languages_to_extract": "",
+        "include_title_in_output_file_name": True
+    }
+
+    def __init__(self, *args, **kwargs):
+        super(Settings, self).__init__(*args, **kwargs)
+
+        self.form_settings = {
+            "languages_to_extract": {
+                "label": "Subtitle languages to extract (leave empty for all)",
+            },
+            "include_title_in_output_file_name": {
+                "label": "Include title in output file name",
+            },
+        }
+
+
 class PluginStreamMapper(StreamMapper):
     def __init__(self):
         super(PluginStreamMapper, self).__init__(logger, ['subtitle'])
         self.sub_streams = []
+        self.settings = None
+
+    def set_settings(self, settings):
+        self.settings = settings
+
+    def _get_language_list(self):
+        language_list = self.settings.get_setting('languages_to_extract')
+        language_list = re.sub('\s', '-', language_list)
+        languages = list(filter(None, language_list.lower().split(',')))
+
+        return [language.strip() for language in languages]
 
     def test_stream_needs_processing(self, stream_info: dict):
         """Any text based will need to be processed"""
-        if stream_info.get('codec_name').lower() in ['srt', 'subrip', 'mov_text']:
+
+        if stream_info.get('codec_name').lower() not in ['srt', 'subrip', 'mov_text']:
+            return False
+
+        languages = self._get_language_list()
+
+        # If no languages specified, extract all
+        if len(languages) == 0:
             return True
-        return False
+
+        language_tag = stream_info.get('tags').get('language', '').lower()
+
+        return language_tag in languages
 
     def custom_stream_mapping(self, stream_info: dict, stream_id: int):
         # Find a tag for this subtitle
         subtitle_tag = ''
         stream_tags = stream_info.get('tags', {})
+
+        languages = self._get_language_list()
+        language_tag = stream_tags.get('language').lower()
+
+        if len(languages) > 0 and language_tag not in languages:
+            return {
+                'stream_mapping':  [],
+                'stream_encoding': [],
+            }
+
         if stream_tags.get('language'):
             subtitle_tag = "{}.{}".format(subtitle_tag, stream_tags.get('language'))
-        if stream_tags.get('title'):
+        if stream_tags.get('title') and self.settings.get_setting('include_title_in_output_file_name'):
             subtitle_tag = "{}.{}".format(subtitle_tag, stream_tags.get('title'))
 
         # If there were no tags, just number the file
@@ -112,6 +164,12 @@ def on_library_management_file_test(data):
     :return:
 
     """
+    # Configure settings object (maintain compatibility with v1 plugins)
+    if data.get('library_id'):
+        settings = Settings(library_id=data.get('library_id'))
+    else:
+        settings = Settings()
+
     # Get the path to the file
     abspath = data.get('path')
 
@@ -132,6 +190,7 @@ def on_library_management_file_test(data):
 
     # Get stream mapper
     mapper = PluginStreamMapper()
+    mapper.set_settings(settings)
     mapper.set_probe(probe)
 
     if mapper.streams_need_processing():
@@ -175,8 +234,15 @@ def on_worker_process(data):
         # File probe failed, skip the rest of this test
         return
 
+    if data.get('library_id'):
+        settings = Settings(library_id=data.get('library_id'))
+    else:
+        settings = Settings()
+
     # Get stream mapper
     mapper = PluginStreamMapper()
+
+    mapper.set_settings(settings)
     mapper.set_probe(probe)
 
     split_original_file_path = os.path.splitext(data.get('original_file_path'))
@@ -208,3 +274,5 @@ def on_worker_process(data):
         parser = Parser(logger)
         parser.set_probe(probe)
         data['command_progress_parser'] = parser.parse_progress
+
+    return data
