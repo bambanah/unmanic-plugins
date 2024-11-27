@@ -1,3 +1,5 @@
+**<span style="color:#56adda">1.1.11</span>**
+- Add support for setting original language from Radarr as default audio track
 
 **<span style="color:#56adda">1.1.10</span>**
 - 2nd fix stream order test comparing new order with original order
