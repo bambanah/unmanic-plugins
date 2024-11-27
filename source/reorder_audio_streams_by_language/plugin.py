@@ -4,7 +4,7 @@
 """
     Written by:               Josh.5 <jsunnex@gmail.com>
     Date:                     23 March 2021, (8:06 PM)
- 
+
     Copyright:
         Copyright (C) 2021 Josh Sunnex
 
@@ -47,7 +47,9 @@ class Settings(PluginSettings):
 class PluginStreamMapper(StreamMapper):
     def __init__(self):
         # Check all streams (only the desired stream type will matter when tested)
-        super(PluginStreamMapper, self).__init__(logger, ['video', 'audio', 'subtitle', 'data', 'attachment'])
+        super(PluginStreamMapper, self).__init__(
+            logger, ['video', 'audio', 'subtitle', 'data', 'attachment']
+        )
         self.settings = None
 
         # The stream type we are considering as streams of interest
@@ -70,7 +72,9 @@ class PluginStreamMapper(StreamMapper):
         self.settings = settings
 
     def test_tags_for_search_string(self, stream_tags):
-        if stream_tags and True in list(k.lower() in ['title', 'language'] for k in stream_tags):
+        if stream_tags and True in list(
+            k.lower() in ['title', 'language'] for k in stream_tags
+        ):
             search_string = self.settings.get_setting('Search String')
             # Check if tag matches the "Search String"
             if search_string.lower() in stream_tags.get('language', '').lower():
@@ -88,11 +92,11 @@ class PluginStreamMapper(StreamMapper):
 
     def custom_stream_mapping(self, stream_info: dict, stream_id: int):
         ident = {
-            'video':      'v',
-            'audio':      'a',
-            'subtitle':   's',
-            'data':       'd',
-            'attachment': 't'
+            'video': 'v',
+            'audio': 'a',
+            'subtitle': 's',
+            'data': 'd',
+            'attachment': 't',
         }
         codec_type = stream_info.get('codec_type').lower()
 
@@ -101,23 +105,37 @@ class PluginStreamMapper(StreamMapper):
             if self.test_tags_for_search_string(stream_info.get('tags')):
                 self.found_search_string_streams = True
                 if len(self.search_string_stream_mapping) == 0:
-                    self.search_string_stream_mapping += ['-map', '0:{}:{}'.format(ident.get(codec_type), stream_id), '-disposition:{}:{}'.format(ident.get(codec_type), 0), 'default']
+                    self.search_string_stream_mapping += [
+                        '-map',
+                        '0:{}:{}'.format(ident.get(codec_type), stream_id),
+                        '-disposition:{}:{}'.format(ident.get(codec_type), 0),
+                        'default',
+                    ]
                 else:
-                    self.search_string_stream_mapping += ['-map', '0:{}:{}'.format(ident.get(codec_type), stream_id)]
+                    self.search_string_stream_mapping += [
+                        '-map',
+                        '0:{}:{}'.format(ident.get(codec_type), stream_id),
+                    ]
             else:
-                self.unmatched_stream_mapping += ['-map', '0:{}:{}'.format(ident.get(codec_type), stream_id)]
+                self.unmatched_stream_mapping += [
+                    '-map',
+                    '0:{}:{}'.format(ident.get(codec_type), stream_id),
+                ]
         else:
             # Process streams not of interest
             if not self.found_search_string_streams:
-                self.first_stream_mapping += ['-map', '0:{}:{}'.format(ident.get(codec_type), stream_id)]
+                self.first_stream_mapping += [
+                    '-map',
+                    '0:{}:{}'.format(ident.get(codec_type), stream_id),
+                ]
             else:
-                self.last_stream_mapping += ['-map', '0:{}:{}'.format(ident.get(codec_type), stream_id)]
+                self.last_stream_mapping += [
+                    '-map',
+                    '0:{}:{}'.format(ident.get(codec_type), stream_id),
+                ]
 
         # Do not map any streams using the default method
-        return {
-            'stream_mapping':  [],
-            'stream_encoding': []
-        }
+        return {'stream_mapping': [], 'stream_encoding': []}
 
     def streams_to_be_reordered(self):
         result = False
@@ -130,12 +148,16 @@ class PluginStreamMapper(StreamMapper):
             logger.info("Streams were found matching the search string")
             # Test if the mapping is already in the correct order
             counter = 0
-            for item in self.search_string_stream_mapping + self.unmatched_stream_mapping:
+            for item in (
+                self.search_string_stream_mapping + self.unmatched_stream_mapping
+            ):
                 if '-map' in item or '-disposition' in item or 'default' in item:
                     continue
                 original_position = item.split(':')[-1]
                 if int(original_position) != int(counter):
-                    logger.info("The new order for the mapped streams will differ from the source file")
+                    logger.info(
+                        "The new order for the mapped streams will differ from the source file"
+                    )
                     result = True
                     break
                 counter += 1
@@ -187,9 +209,15 @@ def on_library_management_file_test(data):
     if mapper.streams_to_be_reordered():
         # Mark this file to be added to the pending tasks
         data['add_file_to_pending_tasks'] = True
-        logger.debug("File '{}' should be added to task list. Probe found streams require processing.".format(abspath))
+        logger.debug(
+            "File '{}' should be added to task list. Probe found streams require processing.".format(
+                abspath
+            )
+        )
     else:
-        logger.debug("File '{}' does not contain streams require processing.".format(abspath))
+        logger.debug(
+            "File '{}' does not contain streams require processing.".format(abspath)
+        )
 
     return data
 

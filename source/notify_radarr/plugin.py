@@ -43,27 +43,27 @@ logger = logging.getLogger("Unmanic.Plugin.notify_radarr")
 
 class Settings(PluginSettings):
     settings = {
-        'host_url':                  'http://localhost:7878',
-        'api_key':                   '',
-        'mode':                      'update_mode',
-        'rename_files':              False,
+        'host_url': 'http://localhost:7878',
+        'api_key': '',
+        'mode': 'update_mode',
+        'rename_files': False,
         'limit_import_on_file_size': True,
-        'minimum_file_size':         '100MB',
+        'minimum_file_size': '100MB',
     }
 
     def __init__(self, *args, **kwargs):
         super(Settings, self).__init__(*args, **kwargs)
         self.form_settings = {
-            "host_url":                  {
-                "label":   "Radarr LAN IP Address",
+            "host_url": {
+                "label": "Radarr LAN IP Address",
                 "tooltip": "Ensure the address starts with 'http'",
             },
-            "api_key":                   {
+            "api_key": {
                 "label": "Radarr API Key",
             },
-            "mode":                      {
-                "label":          "Mode",
-                "input_type":     "select",
+            "mode": {
+                "label": "Mode",
+                "input_type": "select",
                 "select_options": [
                     {
                         'value': "update_mode",
@@ -75,15 +75,15 @@ class Settings(PluginSettings):
                     },
                 ],
             },
-            "rename_files":              self.__set_rename_files(),
+            "rename_files": self.__set_rename_files(),
             "limit_import_on_file_size": self.__set_limit_import_on_file_size(),
-            "minimum_file_size":         self.__set_minimum_file_size(),
+            "minimum_file_size": self.__set_minimum_file_size(),
         }
 
     def __set_rename_files(self):
         values = {
-            "label":       "Trigger Radarr file renaming",
-            "tooltip":     "Trigger Radarr to re-name files according to the defined naming scheme",
+            "label": "Trigger Radarr file renaming",
+            "tooltip": "Trigger Radarr to re-name files according to the defined naming scheme",
             "sub_setting": True,
         }
         if self.get_setting('mode') != 'update_mode':
@@ -92,8 +92,8 @@ class Settings(PluginSettings):
 
     def __set_limit_import_on_file_size(self):
         values = {
-            "label":       "Limit file import size",
-            "tooltip":     "Enable limiting the Radarr notification on items over a set file size",
+            "label": "Limit file import size",
+            "tooltip": "Enable limiting the Radarr notification on items over a set file size",
             "sub_setting": True,
         }
         if self.get_setting('mode') != 'import_mode':
@@ -102,7 +102,7 @@ class Settings(PluginSettings):
 
     def __set_minimum_file_size(self):
         values = {
-            "label":       "Minimum file size",
+            "label": "Minimum file size",
             "description": "Specify the minimum file size of a file that would trigger a notification",
             "sub_setting": True,
         }
@@ -139,7 +139,9 @@ def update_mode(api, abspath, rename_files):
     logger.debug("Detected movie title: %s", movie_title)
     movie_id = movie_data.get('id')
     if not movie_id:
-        logger.error("Missing movie ID. Failed to queue refresh of movie for file: '%s'", abspath)
+        logger.error(
+            "Missing movie ID. Failed to queue refresh of movie for file: '%s'", abspath
+        )
         return
     logger.debug("Detected movie ID: %s", movie_id)
 
@@ -151,56 +153,108 @@ def update_mode(api, abspath, rename_files):
         logger.debug("Received result:\n%s", str(result))
 
         if result.get('message'):
-            logger.error("Failed to queue refresh of movie ID '%s' for file: '%s'", movie_id, abspath)
+            logger.error(
+                "Failed to queue refresh of movie ID '%s' for file: '%s'",
+                movie_id,
+                abspath,
+            )
             logger.error("Response from radarr: %s", result['message'])
             return
         else:
-            logger.info("Successfully queued refresh of movie '%s' for file: '%s'", movie_title, abspath)
+            logger.info(
+                "Successfully queued refresh of movie '%s' for file: '%s'",
+                movie_title,
+                abspath,
+            )
     except PyarrUnauthorizedError:
-        logger.error("Failed to queue refresh of movie '%s' for file: '%s'", movie_title, abspath)
+        logger.error(
+            "Failed to queue refresh of movie '%s' for file: '%s'", movie_title, abspath
+        )
         logger.error("Unauthorized. Please ensure valid API Key is used.")
         return
     except PyarrAccessRestricted:
-        logger.error("Failed to queue refresh of movie '%s' for file: '%s'", movie_title, abspath)
+        logger.error(
+            "Failed to queue refresh of movie '%s' for file: '%s'", movie_title, abspath
+        )
         logger.error("Access restricted. Please ensure API Key has correct permissions")
         return
     except PyarrResourceNotFound:
-        logger.error("Failed to queue refresh of movie '%s' for file: '%s'", movie_title, abspath)
+        logger.error(
+            "Failed to queue refresh of movie '%s' for file: '%s'", movie_title, abspath
+        )
         logger.error("Resource not found")
         return
     except PyarrBadGateway:
-        logger.error("Failed to queue refresh of movie '%s' for file: '%s'", movie_title, abspath)
+        logger.error(
+            "Failed to queue refresh of movie '%s' for file: '%s'", movie_title, abspath
+        )
         logger.error("Bad Gateway. Check your server is accessible")
         return
     except PyarrConnectionError:
-        logger.error("Failed to queue refresh of movie '%s' for file: '%s'", movie_title, abspath)
+        logger.error(
+            "Failed to queue refresh of movie '%s' for file: '%s'", movie_title, abspath
+        )
         logger.error("Timeout connecting to radarr. Check your server is accessible")
         return
 
     if rename_files:
-        time.sleep(3)  # Must give time for the refresh to complete before we run the rename.
+        time.sleep(
+            3
+        )  # Must give time for the refresh to complete before we run the rename.
         try:
             result = api.post_command('RenameMovie', movieIds=[movie_id])
             logger.debug("Received result for 'RenameMovie' command:\n%s", result)
             if isinstance(result, dict):
-                logger.info("Successfully triggered rename of movie '%s' for file: '%s'", movie_title, abspath)
+                logger.info(
+                    "Successfully triggered rename of movie '%s' for file: '%s'",
+                    movie_title,
+                    abspath,
+                )
             else:
-                logger.error("Failed to trigger rename of movie ID '%s' for file: '%s'", movie_id, abspath)
+                logger.error(
+                    "Failed to trigger rename of movie ID '%s' for file: '%s'",
+                    movie_id,
+                    abspath,
+                )
         except PyarrUnauthorizedError:
-            logger.error("Failed to trigger rename of movie '%s' for file: '%s'", movie_title, abspath)
+            logger.error(
+                "Failed to trigger rename of movie '%s' for file: '%s'",
+                movie_title,
+                abspath,
+            )
             logger.error("Unauthorized. Please ensure valid API Key is used.")
         except PyarrAccessRestricted:
-            logger.error("Failed to trigger rename of movie '%s' for file: '%s'", movie_title, abspath)
-            logger.error("Access restricted. Please ensure API Key has correct permissions")
+            logger.error(
+                "Failed to trigger rename of movie '%s' for file: '%s'",
+                movie_title,
+                abspath,
+            )
+            logger.error(
+                "Access restricted. Please ensure API Key has correct permissions"
+            )
         except PyarrResourceNotFound:
-            logger.error("Failed to trigger rename of movie '%s' for file: '%s'", movie_title, abspath)
+            logger.error(
+                "Failed to trigger rename of movie '%s' for file: '%s'",
+                movie_title,
+                abspath,
+            )
             logger.error("Resource not found")
         except PyarrBadGateway:
-            logger.error("Failed to trigger rename of movie '%s' for file: '%s'", movie_title, abspath)
+            logger.error(
+                "Failed to trigger rename of movie '%s' for file: '%s'",
+                movie_title,
+                abspath,
+            )
             logger.error("Bad Gateway. Check your server is accessible")
         except PyarrConnectionError:
-            logger.error("Failed to trigger rename of movie '%s' for file: '%s'", movie_title, abspath)
-            logger.error("Timeout connecting to radarr. Check your server is accessible")
+            logger.error(
+                "Failed to trigger rename of movie '%s' for file: '%s'",
+                movie_title,
+                abspath,
+            )
+            logger.error(
+                "Timeout connecting to radarr. Check your server is accessible"
+            )
 
 
 def import_mode(api, source_path, dest_path):
@@ -224,8 +278,14 @@ def import_mode(api, source_path, dest_path):
     if download_id:
         # Run API command for DownloadedMoviesScan
         #   - DownloadedMoviesScan with a path and downloadClientId
-        logger.info("Queued import movie '%s' using downloadClientId: '%s'", movie_title, download_id)
-        result = api.post_command('DownloadedMoviesScan', path=abspath_string, downloadClientId=download_id)
+        logger.info(
+            "Queued import movie '%s' using downloadClientId: '%s'",
+            movie_title,
+            download_id,
+        )
+        result = api.post_command(
+            'DownloadedMoviesScan', path=abspath_string, downloadClientId=download_id
+        )
     else:
         # Run API command for DownloadedMoviesScan without passing a downloadClientId
         #   - DownloadedMoviesScan with a path and downloadClientId
@@ -258,7 +318,10 @@ def process_files(settings, source_file, destination_files, host_url, api_key):
             minimum_file_size = settings.get_setting('minimum_file_size')
             if check_file_size_under_max_file_size(dest_file, minimum_file_size):
                 # Ignore this file
-                logger.info("Ignoring file as it is under configured minimum size file: '%s'", dest_file)
+                logger.info(
+                    "Ignoring file as it is under configured minimum size file: '%s'",
+                    dest_file,
+                )
                 continue
             import_mode(api, source_file, dest_file)
 
