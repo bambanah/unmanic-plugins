@@ -1,19 +1,29 @@
 ---
-
 name: Bug Report
 description: Please do not use bug reports for support issues.
-title: "[Bug]: "
+title: '[Bug]: '
 labels: ['status:awaiting-triage', 'type:bug']
 body:
   - type: markdown
     attributes:
       value: |
         **THIS IS NOT THE PLACE TO ASK FOR SUPPORT!** Please use [Discord](https://unmanic.app/discord) for support issues.
+        If you think you have an issue that could be resolved by asking for help, please don't post it here.
   - type: textarea
-    id: description
     attributes:
-      label: Describe the Bug
+      label: Plugin details
       description: A clear and concise description of the bug.
+      placeholder: |
+        <!--- Provide some details about your plugin. -->
+        - Plugin name: 
+        - Plugin ID:
+        - Version number:
+
+        <!--- EXAMPLE HOW TO FILL PLUGIN DETAILS:
+        - Plugin name: Notify Plex
+        - Plugin ID: notify_plex
+        - Version number: 0.0.1
+        -->
     validations:
       required: true
   - type: textarea
@@ -60,9 +70,9 @@ body:
       description: |
         Detail the host OS platform, version and software versions.
       placeholder: |
-          - eg. OS / Linux Distro.
-          - eg. Python version (if not using Docker).
-          - eg. Any other tool versions such as FFmpeg, Comskip, Filebot, etc.
+        - eg. OS / Linux Distro.
+        - eg. Python version (if not using Docker).
+        - eg. Any other tool versions such as FFmpeg, Comskip, Filebot, etc.
     validations:
       required: true
   - type: textarea
